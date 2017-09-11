@@ -1,0 +1,75 @@
+ <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
+..\FrameXML\UI.xsd">
+    <Script file="Board.lua"/>
+    <Button name="StrategosCarrierTemplate" virtual="true" hidden="true">
+        <NormalFont inherits="GameFontHighlight"/>
+        <Size x="110" y="28"/>
+        <Layers>
+            <Layer level="ARTWORK">
+                <Texture name="$parentIcon" file="Interface\Glues\CharacterCreate\UI-CharacterCreate-Classes.blp" hidden="true">
+                    <Size x="24" y="24"/>
+                    <Anchors>
+                        <Anchor point="CENTER" relativeTo="$parent"/>
+                        <Anchor point="LEFT" relativeTo="$parent" relativePoint="RIGHT"/>
+                    </Anchors>
+                </Texture>
+            </Layer>
+        </Layers>
+        <Scripts>
+            <OnClick>
+                this:onClick()
+            </OnClick>
+        </Scripts>
+        <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
+            <EdgeSize>
+                <AbsValue val="16"/>
+            </EdgeSize>
+            <TileSize>
+                <AbsValue val="16"/>
+            </TileSize>
+            <BackgroundInsets>
+                <AbsInset left="5" right="5" top="5" bottom="5"/>
+            </BackgroundInsets>
+        </Backdrop>
+        <Frames>
+            <Frame name="$parentRing" inherits="StrategosRingFrameTemplate">
+                <Anchors>
+                        <Anchor point="CENTER" relativeTo="$parentIcon"/>
+                        <Anchor point="LEFT" relativeTo="$parentIcon" relativePoint="RIGHT"/>
+                </Anchors>
+            </Frame>
+        </Frames>   
+    </Button>
+    <Button name="StrategosAllianceCarrier" parent="UIParent" inherits="StrategosCarrierTemplate">
+        <Scripts>
+            <OnLoad>
+                this.faction = 1
+                this:SetBackdropColor(0,0,1,0.25)
+            </OnLoad>
+            <OnShow>
+                this:SetPoint("CENTER", AlwaysUpFrame1DynamicIconButton)
+                this:SetPoint("LEFT", AlwaysUpFrame1DynamicIconButton, "RIGHT")
+            </OnShow>
+        </Scripts>
+    </Button>
+    <Button name="StrategosHordeCarrier" parent="UIParent" inherits="StrategosCarrierTemplate">
+        <Scripts>
+            <OnLoad>
+                this.faction = 2
+                this:SetBackdropColor(1,0,0,0.25)
+            </OnLoad>
+            <OnShow>
+                this:SetPoint("CENTER", AlwaysUpFrame2DynamicIconButton)
+                this:SetPoint("LEFT", AlwaysUpFrame2DynamicIconButton, "RIGHT")
+            </OnShow>
+        </Scripts>
+    </Button>
+    <Frame name="StrategosBGStartRing" inherits="StrategosRingFrameTemplate">
+        <Scripts>
+            <OnShow>
+                this:SetPoint("TOPRIGHT", AlwaysUpFrame1, "TOPLEFT",-4,0)
+                this:SetScale((AlwaysUpFrame1:GetTop()-AlwaysUpFrame1:GetBottom())/this:GetHeight())
+            </OnShow>
+        </Scripts>
+    </Frame>
+</Ui>

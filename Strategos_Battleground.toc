@@ -1,0 +1,12 @@
+## Interface: 11200
+## Title: Strategos [|c0000ff00Warsong Gulch|r]
+## Dependencies: StrategosCore
+## Notes: custom minimap for battlegrounds.
+## SavedVariables: StrategosWSGSettings, StrategosABSettings, StrategosAVGSettings
+## Version: 0.1
+## Author: WobLight
+Battleground.lua
+WarsongGulch.lua
+ArathiBasin.lua
+AlteracValley.lua
+Board.xml
