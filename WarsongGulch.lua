@@ -208,7 +208,7 @@ function WarsongGulch:init()
             if pp then
                 local l = self.broadcaster:sendMessage(format("LHC\t%s%d:%d",n,pp*100,time),"BATTLEGROUND")
                 Object.connect(l, "looped", nil, function (t)
-                    if not flag.carrier or t > 1000 or pp ~= lhe(p) then return end
+                    if not flag.carrier or strlen(flag.carrier.name or "") == 0 or t > 1000 or pp ~= lhe(p) then return end
                     SendChatMessage(format("%s Flag Carrier is below %d%% Health!",n=="a" and "Horde" or "Alliance", pp*100),"BATTLEGROUND")
                     flag.carrier.lastWarn = {health = pp, time = time}
                 end)
@@ -243,6 +243,7 @@ function WarsongGulch:notifyHealth(p, r, force)
         local r = self.broadcaster:sendMessage(format("EFC\th%d\tt%d",p,GetBattlefieldInstanceRunTime()),"BATTLEGROUND")
         flag.carrier.updater = UnitName("player")
         Object.connect(r, "looped", nil, function (t)
+            if not flag.carrier then return end
             self.broadcaster.healthLock = nil
             if flag.carrier.updater ~= UnitName("player") then
                 return
@@ -613,6 +614,10 @@ function WarsongGulch:registerCombatEvents()
 end
 
 function WarsongGulch:engageEFC(name, accurate)
+    if name == UnitName("player") then
+        self:enemyCarriedFlag():carrierEngaged(name, accurate, "player")
+        return
+    end
     for i = 1, GetNumRaidMembers() do
         local unit = "raid"..i
         if UnitName(unit) == name then
