@@ -2,13 +2,15 @@ local S, SB
 if StrategosCore == nil then 
     StrategosCore = {}
 end
-S = StrategosCore
-setmetatable(S, {__index = getfenv() })
-setfenv(1, S)
 
 if StrategosBattleground == nil then 
     StrategosBattleground = {}
 end
+
+S = StrategosCore
+setmetatable(S, {__index = getfenv() })
+setfenv(1, S)
+
 SB = StrategosBattleground
 Object.attach(StrategosBattleground, {"newBattleground"})
 setmetatable(SB, {__index = getfenv() })
@@ -102,12 +104,8 @@ EventHandler.CHAT_MSG_BG_SYSTEM_HORDE = function()  HandleMessage(arg1, 2) end
 EventHandler.CHAT_MSG_MONSTER_YELL = function()  HandleMessage(arg1, -1) end
 
 function EventHandler.UPDATE_WORLD_STATES()
-    for i = 1,GetNumMapLandmarks() do
-        local name, descr, textureIndex, x, y = GetMapLandmarkInfo(i)
-        local f = AlteracPOILookup[name]
-        if f then
-            f.pin:SetTexCoord(WorldMap_GetPOITextureCoords(textureIndex))
-        end
+    if currentBattleground then
+        currentBattleground:updateWorldStates()
     end
 end
 
@@ -358,13 +356,43 @@ function StrategosMinimapPlugin:load()
             f:Hide()
         end
     end
+    
+    local f = getglobal("StrategosMinimapEFCIndicator")
+    if not f then
+        f = CreateFrame("Model", "StrategosMinimapEFCIndicator", StrategosMinimap)
+        f:SetWidth(125)
+        f:SetHeight(125)
+        f:SetPosition(-0.0125,-0.0125,0)
+        f:SetModel("Interface\\MiniMap\\Ping\\MinimapPing.mdx")
+        f.closeTimer = Timer:new(2.5)
+        f.farTimer = Timer:new(2.5)
+        f:SetScript("OnUpdate",function()
+            if f.closeTimer:remaning() then
+                this:ClearAllPoints()
+                this:SetPoint("CENTER", getglobal("StrategosMinimapDot"..this.closeIndex))
+                this:SetScale(0.4)
+                this:SetAlpha(1)
+                this:Show()
+            elseif f.farTimer:remaning() then
+                this:ClearAllPoints()
+                this:SetPoint("CENTER", getglobal("StrategosMinimapDot"..this.farIndex))
+                this:SetScale(1)
+                this:SetAlpha(0.33)
+                this:Show()
+            else
+                this:Hide()
+            end
+        end)
+        Object.connect(f.closeTimer, "started", f, f.Show)
+        Object.connect(f.farTimer, "started", f, f.Show)
+    end
 end
 
 function Battleground:scoreUpdate()
-    debug("fail")
 end
 
-
+function Battleground:updateWorldStates()
+end
 
 function Battleground:leave()
 end

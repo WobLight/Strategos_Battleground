@@ -38,7 +38,7 @@
                         <Anchor point="LEFT" relativeTo="$parentIcon" relativePoint="RIGHT"/>
                 </Anchors>
             </Frame>
-        </Frames>   
+        </Frames>
     </Button>
     <Button name="StrategosAllianceCarrier" parent="UIParent" inherits="StrategosCarrierTemplate">
         <Scripts>
@@ -64,11 +64,42 @@
             </OnShow>
         </Scripts>
     </Button>
+    <StatusBar name="StrategosArathiScoreBar" parent="UIParent" reverse="true" hidden="true" enableMouse="true">
+        <Layers>
+            <Layer level="ARTWORK">
+                <FontString name="$parentText" inherits="GameFontHighlightSmall"/>
+            </Layer>
+        </Layers>
+        <BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
+        <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background">
+            <EdgeSize>
+                <AbsValue val="16"/>
+            </EdgeSize>
+            <TileSize>
+                <AbsValue val="16"/>
+            </TileSize>
+            <BackgroundInsets>
+            </BackgroundInsets>
+        </Backdrop>
+        <Scripts>
+            <OnMouseUp>
+                SendChatMessage(StrategosArathiScoreBarText:GetText(),"BATTLEGROUND")
+            </OnMouseUp>
+            <OnShow>
+                this:SetPoint("LEFT", AlwaysUpFrame1Text, "LEFT")
+                this:SetPoint("TOP", AlwaysUpFrame1Text, "BOTTOM", 0, -1)
+                this:SetPoint("BOTTOM", AlwaysUpFrame2Text, "TOP", 0, 1)
+                this:SetHeight(8)
+            </OnShow>
+        </Scripts>
+    </StatusBar>
     <Frame name="StrategosBGStartRing" inherits="StrategosRingFrameTemplate">
         <Scripts>
             <OnShow>
-                this:SetPoint("TOPRIGHT", AlwaysUpFrame1, "TOPLEFT",-4,0)
-                this:SetScale((AlwaysUpFrame1:GetTop()-AlwaysUpFrame1:GetBottom())/this:GetHeight())
+                if AlwaysUpFrame1 then
+                    this:SetPoint("TOPRIGHT", AlwaysUpFrame1, "TOPLEFT",-4,0)
+                    this:SetScale((AlwaysUpFrame1:GetTop()-AlwaysUpFrame1:GetBottom())/this:GetHeight())
+                end
             </OnShow>
         </Scripts>
     </Frame>

@@ -3,14 +3,15 @@ if StrategosCore == nil then
     StrategosCore = {}
 end
 S = StrategosCore
-setmetatable(S, {__index = getfenv() })
-setfenv(1, S)
 
 if StrategosBattleground == nil then 
     StrategosBattleground = {}
 end
 SB = StrategosBattleground
-Object.attach(StrategosBattleground, {"newBattleground"})
+
+setmetatable(S, {__index = getfenv() })
+setfenv(1, S)
+
 setmetatable(SB, {__index = getfenv() })
 setfenv(1, SB)
 
@@ -39,6 +40,7 @@ end
 function WarsongGulch.alliedFlagFrame()
     return UnitFactionGroup("player") == "Alliance" and AlwaysUpFrame1DynamicIconButton or AlwaysUpFrame2DynamicIconButton
 end
+
 function WarsongGulch.enemyFlagFrame()
     return UnitFactionGroup("player") == "Horde" and AlwaysUpFrame1DynamicIconButton or AlwaysUpFrame2DynamicIconButton
 end
@@ -58,13 +60,75 @@ function WarsongGulch:lookForCarrier()
     end
     self.finderTimer:start()
 end
-    
+
+local function prepare(template) --courtesy of shagu
+    template = gsub(template, "%(", "%%(") -- fix ( in string
+    template = gsub(template, "%)", "%%)") -- fix ) in string
+    template = gsub(template, "%d%$","")
+    template = gsub(template, "%%s", "(.+)")
+    return gsub(template, "%%d", "(%%d+)")
+end
+
+local CombatEventsMatches = {
+    COMBAT_HITS =  {
+        regexes = {
+            prepare(COMBATHITOTHEROTHER),
+            prepare(COMBATHITSCHOOLOTHEROTHER),
+            prepare(COMBATHITCRITOTHEROTHER),
+            prepare(COMBATHITCRITSCHOOLOTHEROTHER)
+        },
+        captures = {1,2}
+    },
+    COMBAT_MISSES = {
+        regexes = {
+            prepare(MISSEDOTHEROTHER),
+            prepare(IMMUNEOTHEROTHER),
+            prepare(VSDODGEOTHEROTHER),
+            prepare(VSBLOCKOTHEROTHER),
+            prepare(VSPARRYOTHEROTHER),
+            prepare(VSRESISTOTHEROTHER)
+        },
+        captures = {1,2}
+    },
+    SPELL_DAMAGE = {
+        regexes = {
+            prepare(SPELLLOGOTHEROTHER),
+            prepare(SPELLBLOCKEDOTHEROTHER),
+            prepare(SPELLDEFLECTEDOTHEROTHER),
+            prepare(SPELLDODGEDOTHEROTHER),
+            prepare(SPELLIMMUNEOTHEROTHER),
+            prepare(SPELLLOGABSORBOTHEROTHER),
+            prepare(SPELLLOGCRITOTHEROTHER),
+            prepare(SPELLLOGCRITSCHOOLOTHEROTHER),
+            prepare(SPELLLOGSCHOOLOTHEROTHER),
+            prepare(SPELLMISSOTHEROTHER),
+            prepare(SPELLPARRIEDOTHEROTHER),
+            prepare(SPELLRESISTOTHEROTHER)
+        },
+        captures = {1,3}
+    }
+}
+
+local CombatEvents = {
+    CHAT_MSG_COMBAT_HOSTILEPLAYER_HITS = {accurate = true, matches = CombatEventsMatches.COMBAT_HITS, hostile = 1},
+    CHAT_MSG_COMBAT_HOSTILEPLAYER_MISSES = {accurate = true, matches = CombatEventsMatches.COMBAT_MISSES, hostile = 1},
+    CHAT_MSG_SPELL_HOSTILEPLAYER_DAMAGE = {accurate = false, matches = CombatEventsMatches.SPELL_DAMAGE, hostile = 1},
+    CHAT_MSG_COMBAT_FRIENDLYPLAYER_HITS = {accurate = true, matches = CombatEventsMatches.COMBAT_HITS},
+    CHAT_MSG_COMBAT_FRIENDLYPLAYER_MISSES = {accurate = false, matches = CombatEventsMatches.COMBAT_MISSES},
+    CHAT_MSG_SPELL_FRIENDLYPLAYER_DAMAGE = {accurate = false, matches = CombatEventsMatches.SPELL_DAMAGE}
+}
+
+
+local CombatEventsHandler = CreateFrame("FRAME")
+
 function WarsongGulch:new()
     local o = Battleground:new()
     o.zone = "Warsong Gulch"
     o.flagA = WSGNode:new({ name = "Alliance Flag", faction = 1})
     o.flagH = WSGNode:new({ name = "Horde Flag", faction = 2})
     o.broadcaster = Broadcaster:new("STRTGSWSG")
+    o.broadcaster.healthTimer = Timer:new()
+    o.broadcaster.healthTimer:setActive()
     o.finderTimer = Timer:new(1)
     o.finderTimer:setActive()
     function StrategosMinimapPlugin:getHighlight(unit)
@@ -79,6 +143,9 @@ function WarsongGulch:new()
 
     Object.connect(o.finderTimer,"triggered", o, o.lookForCarrier)
     Object.connect(o.broadcaster,"messageRecieved", o, o.processMessage)
+    Object.connect(o.broadcaster.healthTimer, "triggered", nil, function()
+        o:notifyHealth(nil, nil, true)
+    end)
     return o
 end
 
@@ -96,6 +163,12 @@ function WarsongGulch:init()
                 self.finderTimer:start()
             end
         end)
+        aframe:SetScript("OnHide", function()
+            local flag = self:alliedCarriedFlag()
+            if flag.carrier then
+                self:alliedCarriedFlag():drop()
+            end
+        end)
     end
     local eframe = WarsongGulch.enemyFlagFrame()
     if eframe then
@@ -105,6 +178,83 @@ function WarsongGulch:init()
         eframe:SetScript("OnShow", function()
             self:enemyCarriedFlag():pick()
         end)
+        eframe:SetScript("OnHide", function()
+            self:enemyCarriedFlag():drop()
+        end)
+    end
+    
+    self:registerCombatEvents()
+    self:requestCarriersData()
+    Object.connect(self:enemyCarriedFlag(), "carrierHealthChanged", self, self.notifyHealth)
+    for c,f in {a = self.flagA, h = self.flagH} do
+        local flag = f
+        local function lhe (p)
+            for _,pp in {0.1,0.20,0.4} do
+                if p < pp and (not flag.carrier.lastWarn or pp < flag.carrier.lastWarn.health) then
+                    return pp
+                end
+            end
+        end
+        local n = c
+        Object.connect(flag,"carrierHealthChanged",nil,function (p,r)
+            if not p or r then
+                return
+            end
+            if flag.carrier.lastWarn and GetBattlefieldInstanceRunTime() - flag.carrier.lastWarn.time > 20000 then
+                flag.carrier.lastWarn = nil
+            end
+            local pp = lhe(p)
+            local time = GetBattlefieldInstanceRunTime()
+            if pp then
+                local l = self.broadcaster:sendMessage(format("LHC\t%s%d:%d",n,pp*100,time),"BATTLEGROUND")
+                Object.connect(l, "looped", nil, function (t)
+                    if not flag.carrier or t > 1000 or pp ~= lhe(p) then return end
+                    SendChatMessage(format("%s Flag Carrier is below %d%% Health!",n=="a" and "Horde" or "Alliance", pp*100),"BATTLEGROUND")
+                    flag.carrier.lastWarn = {health = pp, time = time}
+                end)
+            end
+        end)
+    end
+end
+
+function WarsongGulch:sendEFCLost()
+    self.broadcaster:sendMessage(format("EFC"),"BATTLEGROUND")
+    self.broadcaster.healthTimer:stop()
+end
+
+function WarsongGulch:notifyHealth(p, r, force)
+    if self.broadcaster.healthLock or r then
+        return
+    end
+    local flag = self:enemyCarriedFlag()
+    if not flag.carrier or not force and flag.carrier.updater and flag.carrier.updater ~= UnitName("player") then
+        return
+    end
+    if not flag.carrier.health then
+        if UnitName("player") == flag.carrier.updater then
+            flag.carrier.updater = nil
+            self:sendEFCLost()
+        end
+        return
+    end
+    p = floor((p and p or flag.carrier.health)*100)
+    local old = flag.carrier.lastNotifiedHealth
+    if not old or abs(p-old) > 10 or force then
+        local r = self.broadcaster:sendMessage(format("EFC\th%d\tt%d",p,GetBattlefieldInstanceRunTime()),"BATTLEGROUND")
+        flag.carrier.updater = UnitName("player")
+        Object.connect(r, "looped", nil, function (t)
+            self.broadcaster.healthLock = nil
+            if flag.carrier.updater ~= UnitName("player") then
+                return
+            end
+            if t < 1000 then
+                self.broadcaster.healthTimer:start(3.5)
+            else
+                flag.carrier.updater = nil
+                self:sendEFCLost()
+            end
+        end)
+        self.broadcaster.healthLock = true
     end
 end
 
@@ -128,11 +278,12 @@ setmetatable(WSGNode, { __index = Node })
 function WSGNode:new(o)
     o = Node:new(o)
     setmetatable(o, { __index = self })
-    StrategosCore.Object.attach(o,{"picked","resetted","captured","dropped","carrierNameChanged","carrierClassChanged","carrierHealthChanged"})
+    StrategosCore.Object.attach(o,{"picked","resetted","captured","dropped","carrierNameChanged","carrierClassChanged","carrierHealthChanged","carrierEngaged"})
     return o
 end
 
 function WSGNode:pick(name)
+    self.waitingCarrierData = nil
     if not self.carrier then
         self.timer:stop()
         self.carrier = {}
@@ -146,14 +297,18 @@ function WSGNode:pick(name)
 end
 
 function WSGNode:drop()
-    self.timer:start(10)
-    self:dropped()
-    self.carrier = nil
-    self:carrierNameChanged()
-    self:carrierHealthChanged()
+    self.waitingCarrierData = nil
+    if self.carrier then
+        self.timer:start(10)
+        self:dropped()
+        self.carrier = nil
+        self:carrierNameChanged()
+        self:carrierHealthChanged()
+    end
 end
 
 function WSGNode:capture()
+    self.waitingCarrierData = nil
     self.timer:stop()
     self:captured()
     self.carrier = nil
@@ -162,6 +317,7 @@ function WSGNode:capture()
 end
 
 function WSGNode:reset()
+    self.waitingCarrierData = nil
     self.timer:stop()
     self:resetted()
     self.carrier = nil
@@ -193,12 +349,16 @@ function WSGNode:setCarrierName(name)
     end
 end
 
-function WSGNode:setCarrierHealth(p)
-    if self.carrier.health == p then
+function WSGNode:setCarrierHealth(p,remote)
+    local health = remote and "remoteHealth" or "health"
+    if self.carrier[health] == p then
         return
     end
-    self.carrier.health = p
-    self:carrierHealthChanged(p)
+    self.carrier[health] = p
+    if remote and self.carrier.health or not (remote or p) and self.carrier.remoteHealth then
+        return
+    end
+    self:carrierHealthChanged(p, remote)
 end
 
 function WSGNode:isAllied()
@@ -322,24 +482,156 @@ function WarsongGulch:scanEnemyFC()
 end
 
 function WarsongGulch:requestCarriersData()
-    self.broadcaster:sendMessage("REQUEST_CARRIERS","BATTLEGROUND")
+    local r = self.broadcaster:sendMessage("REQUEST_CARRIERS","BATTLEGROUND")
+    self.flagA.waitingCarrierData = true
+    self.flagH.waitingCarrierData = true
 end
 
 function WarsongGulch:processMessage(pkt)
-    if pkt.msg == "REQUEST_CARRIERS" then
+    debug(pkt)
+    if pkt.message == "REQUEST_CARRIERS" then
         local reply = ""
         for k,flag in {a=self.flagA, h=self.flagH} do
-            if flag.carrier and flag.carrier.name then
+            if flag.carrier and flag.carrier.name and flag.carrier.name ~= "" then
                 reply = reply .. "\t" ..k..flag.carrier.name
             end
         end
+        local efc = self:enemyCarriedFlag().carrier
+        if efc and efc.updater then
+            reply = reply .. "\tu" .. efc.updater
+        end
         if reply ~= "" then
-            pkt:reply("DATA_CARRIERS"..reply)
+            self.broadcaster:sendMessage("DATA_CARRIERS"..reply,"BATTLEGROUND")
+        end
+    elseif strfind(pkt.message,"^DATA_CARRIERS") then
+        for k,flag in {a=self.flagA, h=self.flagH} do
+            if flag.waitingCarrierData then
+                local _,_,name = strfind(pkt.message, format("\t%s(%%a+)",k))
+                if name then
+                    flag:pick(name)
+                end
+            end
+            local efc = self:enemyCarriedFlag().carrier
+            if efc then
+                local r = {strfind(pkt.message,"\tu(%a+)")}
+                if getn(r) == 3 then
+                    efc.updater = r[3]
+                end
+            end
+        end
+    elseif strfind(pkt.message,"^EFC") then
+        local flag = self:enemyCarriedFlag()
+        if not flag.carrier then
+            return
+        end
+        local _, _, p = strfind(pkt.message,"\th(%d+)")
+        if not p then
+            if flag.carrier.updater == pkt.sender then
+                flag.carrier.updater = nil
+                self:enemyCarriedFlag():setCarrierHealth(nil, true)
+                self:notifyHealth(nil, nil, true)
+            end
+            return
+        end
+        local _, _, t = strfind(pkt.message,"\tt(%d+)")
+        t = tonumber(t)
+        if not self.broadcaster.healthLock and flag.carrier.updater == UnitName("player") then
+            return
+        end
+--        flag.carrier.updaters[pkt.sender] = {p = p, t = t}
+        if ( not flag.carrier.lastHealthTime or flag.carrier.lastHealthTime < t ) and GetBattlefieldInstanceRunTime() - t < 1000 then
+            flag.carrier.updater = pkt.sender
+            flag:setCarrierHealth(tonumber(p)/100, true)
+            self.broadcaster.healthTimer:start(5)
+            flag.carrier.lastHealthTime = t
+        end
+    elseif strfind(pkt.message,"^LHC") then
+        local r = {strfind(pkt.message,"\t(%a)(%d+):(%d+)")}
+        if getn(r) ~= 5 then
+            return
+        end
+        local flag = r[3] == "a" and self.flagA or self.flagH
+        if not flag.carrier then
+            return
+        end
+        flag.carrier.lastWarn = {health = tonumber(r[4])/100, time = tonumber(r[5])}
+    elseif strfind(pkt.message,"^CE") then
+        local r = {strfind(pkt.message,"\t(%a+):(.):(%d+)")}
+        if getn(r) ~= 5 then
+            return
+        end
+        local name, accurate, time = r[3], r[4]~="0", tonumber(r[5])
+        local flag = self:enemyCarriedFlag()
+        if not flag.carrier then
+            return
+        end
+        if not flag.carrier.lastEngage or flag.carrier.lastEngage < time then
+            flag.carrier.lastEngage = time
+            self:engageEFC(name, accurate)
         end
     end
 end
                 
 function WarsongGulch:leave()
+    self:unregisterCombatEvents()
     self.broadcaster:unregister()
 end
 
+function WarsongGulch:registerCombatEvents()
+    for e in CombatEvents do
+        CombatEventsHandler:RegisterEvent(e)
+    end
+    local bg = self
+    CombatEventsHandler:SetScript("OnEvent", function()
+        local ce = CombatEvents[event]
+        for _,m in ce.matches.regexes do
+            local fn, en
+            local r = {}
+            r = {strfind(arg1,m)}
+            if getn(r) >= 4 then
+                if ce.hostile then
+                    fn = r[2+ce.matches.captures[2]]
+                    en = r[2+ce.matches.captures[1]]
+                else
+                    fn = r[2+ce.matches.captures[1]]
+                    en = r[2+ce.matches.captures[2]]
+                end
+            end
+            if fn == "you" then
+                fn = UnitName("player")
+            end
+            if en and fn then
+                local flag = bg:enemyCarriedFlag()
+                if flag.carrier and flag.carrier.name and en == flag.carrier.name then
+                    self.broadcaster:sendMessage(format("CE\t%s:%d:%d",fn, ce.accurate and 1 or 0,GetBattlefieldInstanceRunTime()),"BATTLEGROUND")
+                    self:engageEFC(name, ce.accurate)
+                end
+                return
+            end
+        end
+    end)
+end
+
+function WarsongGulch:engageEFC(name, accurate)
+    for i = 1, GetNumRaidMembers() do
+        local unit = "raid"..i
+        if UnitName(unit) == name then
+            if accurate then
+                StrategosMinimapEFCIndicator.closeTimer:start()
+                StrategosMinimapEFCIndicator.closeIndex = i
+            else
+                StrategosMinimapEFCIndicator.farTimer:start()
+                StrategosMinimapEFCIndicator.farIndex = i
+            end
+            self:enemyCarriedFlag():carrierEngaged(name, accurate, unit)
+            PlaySound("MapPing")
+            return
+        end
+    end
+end
+
+function WarsongGulch:unregisterCombatEvents()
+    for e in CombatEvents do
+        CombatEventsHandler:UnregisterEvent(e)
+    end
+end

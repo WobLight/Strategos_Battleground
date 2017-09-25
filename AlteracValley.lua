@@ -3,13 +3,15 @@ if StrategosCore == nil then
     StrategosCore = {}
 end
 S = StrategosCore
-setmetatable(S, {__index = getfenv() })
-setfenv(1, S)
 
 if StrategosBattleground == nil then 
     StrategosBattleground = {}
 end
 SB = StrategosBattleground
+
+setmetatable(S, {__index = getfenv() })
+setfenv(1, S)
+
 setmetatable(SB, {__index = getfenv() })
 setfenv(1, SB)
 
@@ -58,42 +60,6 @@ function AlteracValley:new()
     setmetatable(o, self)
     self.__index = self
     o.nodes = {}
-    for i = 1,GetNumMapLandmarks() do
-        local name, descr, textureIndex, x, y = GetMapLandmarkInfo(i)
-        local f = AlteracPOILookup[name]
-        if f then
-            local node = AVNode:new(name)
-            o.nodes[name] = node
-            node.id = i
-            f:setNode(node)
-            if descr == "Alliance Controlled" then
-                node:setFaction(1)
-            elseif descr == "Horde Controlled" then
-                node:setFaction(2)
-            elseif descr == "In Conflict" then
-                if textureIndex == 3 or textureIndex == 8 then
-                    if strfind(name, "Tower") then
-                        node:setFaction(2)
-                    elseif name ~= "Snowfall Graveyard" then
-                        node:setFaction(2)
-                    end
-                    node:setFaction(1,1)
-                    f.ring:Show()
-                elseif textureIndex == 11 or textureIndex == 13 then
-                    if strfind(name, "Bunker") then
-                        node:setFaction(1)
-                    elseif name ~= "Snowfall Graveyard" then
-                        node:setFaction(1)
-                    end
-                    node:setFaction(2,1)
-                    f.ring:Show()
-                end
-            end
-            tinsert(StrategosMinimapPlugin.frames, f)
-            f.pin:SetTexCoord(WorldMap_GetPOITextureCoords(textureIndex))
-            f:Show()
-        end
-    end
     return o
 end
 
@@ -133,4 +99,53 @@ function AlteracValley:processChatEvent(message, faction)
         end
     end
     Battleground.processChatEvent(self, message, faction)
+end
+
+function AlteracValley:updateWorldStates()
+    SetMapToCurrentZone()
+    if not next(self.nodes) then
+        for i = 1,GetNumMapLandmarks() do
+            local name, descr, textureIndex, x, y = GetMapLandmarkInfo(i)
+            local f = AlteracPOILookup[name]
+            if f then
+                local node = AVNode:new(name)
+                self.nodes[name] = node
+                node.id = i
+                f:setNode(node)
+                if descr == "Alliance Controlled" then
+                    node:setFaction(1)
+                elseif descr == "Horde Controlled" then
+                    node:setFaction(2)
+                elseif descr == "In Conflict" then
+                    if textureIndex == 3 or textureIndex == 8 then
+                        if strfind(name, "Tower") then
+                            node:setFaction(2)
+                        elseif name ~= "Snowfall Graveyard" then
+                            node:setFaction(2)
+                        end
+                        node:setFaction(1,1)
+                        f.ring:Show()
+                    elseif textureIndex == 11 or textureIndex == 13 then
+                        if strfind(name, "Bunker") then
+                            node:setFaction(1)
+                        elseif name ~= "Snowfall Graveyard" then
+                            node:setFaction(1)
+                        end
+                        node:setFaction(2,1)
+                        f.ring:Show()
+                    end
+                end
+                tinsert(StrategosMinimapPlugin.frames, f)
+                f.pin:SetTexCoord(WorldMap_GetPOITextureCoords(textureIndex))
+                f:Show()
+            end
+        end
+    end
+    for i = 1,GetNumMapLandmarks() do
+        local name, descr, textureIndex, x, y = GetMapLandmarkInfo(i)
+        local f = AlteracPOILookup[name]
+        if f then
+            f.pin:SetTexCoord(WorldMap_GetPOITextureCoords(textureIndex))
+        end
+    end
 end

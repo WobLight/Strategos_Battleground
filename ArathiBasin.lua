@@ -3,14 +3,15 @@ if StrategosCore == nil then
     StrategosCore = {}
 end
 S = StrategosCore
-setmetatable(S, {__index = getfenv() })
-setfenv(1, S)
 
 if StrategosBattleground == nil then 
     StrategosBattleground = {}
 end
 SB = StrategosBattleground
-Object.attach(StrategosBattleground, {"newBattleground"})
+
+setmetatable(S, {__index = getfenv() })
+setfenv(1, S)
+
 setmetatable(SB, {__index = getfenv() })
 setfenv(1, SB)
 
@@ -45,7 +46,7 @@ end
 
 ArathiBasin = {}
 
-setmetatable(ArathiBasin, { __index = Battleground })
+setmetatable(ArathiBasin,{ __index = Battleground })
 
 function ArathiBasin:new()
     local o = Battleground:new()
@@ -70,8 +71,44 @@ function ArathiBasin:new()
             b[1]:Show()
         end
     end
-    
+    Object.attach(o,{"updateWinTime"})
+    o.team = {{},{}}
     return o
+end
+
+function ArathiBasin:updateWorldStates()
+    local now = GetTime()
+    for i=1,2 do
+        local _, msg = GetWorldStateUIInfo(i)
+        if not msg then
+            return
+        end
+        local _,_, n, s = strfind(msg, "(%d).-(%d+)/")
+        n = tonumber(n)
+        s = tonumber(s)
+        if self.team[i].lastN ~= n or self.team[i].lastScore ~= s then
+            if self.team[i].lastScore ~= s then
+                self.team[i].lastScore = s
+                self.team[i].lastTime = now
+            end
+            if n == 0 then
+                self.team[i].winTime = nil
+            else
+                local tt = n == 5 and 1 or (5 - n) * 3
+                local w = ceil((2000 - s) / 10 * tt)
+                if n == 5 then
+                    w = w / 3
+                end
+                self.team[i].winTime = self.team[i].lastTime + w
+                self:updateWinTime(i, self.team[i].winTime)
+            end
+        end
+    end
+end
+
+function ArathiBasin:timeToWin(team)
+    local time = self.team[team].winTime
+    return time and time - GetTime() or nil
 end
 
 function ArathiBasin:processChatEvent(message, faction)
@@ -112,4 +149,8 @@ function ArathiBasin:processChatEvent(message, faction)
         end
     end
     Battleground.processChatEvent(self, message, faction)
+end
+
+function ArathiBasin:leave()
+    self.statesHandler:UnregisterEvent("UPDATE_WORLD_STATES")
 end
