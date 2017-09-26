@@ -610,7 +610,7 @@ function WarsongGulch:registerCombatEvents()
                 local flag = bg:enemyCarriedFlag()
                 if flag.carrier and flag.carrier.name and en == flag.carrier.name then
                     self.broadcaster:sendMessage(format("CE\t%s:%d:%d",fn, ce.accurate and 1 or 0,GetBattlefieldInstanceRunTime()),"BATTLEGROUND")
-                    self:engageEFC(name, ce.accurate)
+                    self:engageEFC(fn, ce.accurate)
                 end
                 return
             end
