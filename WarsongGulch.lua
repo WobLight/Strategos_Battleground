@@ -579,6 +579,11 @@ function WarsongGulch:leave()
         aframe:SetScript("OnShow", nil)
         aframe:SetScript("OnHide", nil)
     end
+    local eframe = WarsongGulch.enemyCarriedFlag()
+    if eframe then
+        eframe:SetScript("OnShow", nil)
+        eframe:SetScript("OnHide", nil)
+    end
     self:unregisterCombatEvents()
     self.broadcaster:unregister()
 end
