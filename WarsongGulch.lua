@@ -574,6 +574,11 @@ function WarsongGulch:processMessage(pkt)
 end
                 
 function WarsongGulch:leave()
+    local aframe = WarsongGulch.alliedFlagFrame()
+    if aframe then
+        aframe:SetScript("OnShow", nil)
+        aframe:SetScript("OnHide", nil)
+    end
     self:unregisterCombatEvents()
     self.broadcaster:unregister()
 end
