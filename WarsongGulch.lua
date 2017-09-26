@@ -241,6 +241,7 @@ function WarsongGulch:notifyHealth(p, r, force)
     local old = flag.carrier.lastNotifiedHealth
     if not old or abs(p-old) > 10 or force then
         local r = self.broadcaster:sendMessage(format("EFC\th%d\tt%d",p,GetBattlefieldInstanceRunTime()),"BATTLEGROUND")
+        flag.carrier.lastNotifiedHealth = p
         flag.carrier.updater = UnitName("player")
         Object.connect(r, "looped", nil, function (t)
             if not flag.carrier then return end
