@@ -1,8 +1,7 @@
  <Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/
 ..\FrameXML\UI.xsd">
     <Script file="Board.lua"/>
-    <Button name="StrategosCarrierTemplate" virtual="true" hidden="true">
-        <NormalFont inherits="GameFontHighlight"/>
+    <Frame name="StrategosCarrierTemplate" virtual="true" hidden="true">
         <Size x="110" y="28"/>
         <Layers>
             <Layer level="ARTWORK">
@@ -15,11 +14,6 @@
                 </Texture>
             </Layer>
         </Layers>
-        <Scripts>
-            <OnClick>
-                this:onClick()
-            </OnClick>
-        </Scripts>
         <Backdrop bgFile="Interface\Tooltips\UI-Tooltip-Background" edgeFile="Interface\Tooltips\UI-Tooltip-Border" tile="true">
             <EdgeSize>
                 <AbsValue val="16"/>
@@ -32,6 +26,29 @@
             </BackgroundInsets>
         </Backdrop>
         <Frames>
+            <StatusBar name="$parentBar" hidden="true">
+                <BarTexture file="Interface\TargetingFrame\UI-StatusBar"/>
+                <Anchors>
+                    <Anchor point="TOPLEFT">
+                        <Offset>
+                            <AbsDimension x="5" y="-5"/>
+                        </Offset>
+                    </Anchor>
+                    <Anchor point="BOTTOMRIGHT">
+                        <Offset>
+                            <AbsDimension x="-5" y="5"/>
+                        </Offset>
+                    </Anchor>
+                </Anchors>
+            </StatusBar>
+            <Button name="$parentButton" setallpoints="true">
+                <NormalFont inherits="GameFontHighlight"/>
+                <Scripts>
+                    <OnClick>
+                        this:onClick()
+                    </OnClick>
+                </Scripts>
+            </Button>
             <Frame name="$parentRing" inherits="StrategosRingFrameTemplate">
                 <Anchors>
                         <Anchor point="CENTER" relativeTo="$parentIcon"/>
@@ -39,7 +56,7 @@
                 </Anchors>
             </Frame>
         </Frames>
-    </Button>
+    </Frame>
     <Button name="StrategosAllianceCarrier" parent="UIParent" inherits="StrategosCarrierTemplate">
         <Scripts>
             <OnLoad>

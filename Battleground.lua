@@ -33,6 +33,22 @@ local Strategos_EventList = {
     "UPDATE_BATTLEFIELD_SCORE"
 }
 
+EventHandler:RegisterEvent("ADDON_LOADED")
+
+function EventHandler.ADDON_LOADED()
+    if arg1 == "Strategos_Battleground" then
+        if not StrategosWSGSettings then
+            getfenv(0).StrategosWSGSettings = {}
+        end
+        if not StrategosAVSettings then
+            getfenv(0).StrategosAVSettings = {}
+        end
+        if not StrategosABSettings then
+            getfenv(0).StrategosABSettings = {}
+        end
+    end
+end
+
 EventHandler:SetScript("OnEvent",function()
     local handle = EventHandler[event]
     if handle then

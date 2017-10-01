@@ -18,7 +18,12 @@ Object.attach(StrategosBattleground, {"newBattleground"})
 setmetatable(SB, {__index = getfenv() })
 setfenv(1, SB)
 
-function StrategosBattlegroundUIController:initWSGFrame(node, button, icon)
+function StrategosBattlegroundUIController:initWSGFrame(node, frame)
+    local name = frame:GetName()
+    local button = getglobal(name .. "Button")
+    local bar = getglobal(name .. "Bar")
+    local icon = getglobal(name .. "Icon")
+    local ring = getglobal(name .. "Ring")
     local function getIcon(idx)
         local sx, sy = mod(idx,4), floor(idx/4)
         return sx/4, (sx +1)/4, sy/4, (sy +1)/4
@@ -42,14 +47,30 @@ function StrategosBattlegroundUIController:initWSGFrame(node, button, icon)
             icon:Hide()
         end
     end
-    Object.connect(node, "picked", button, button.Show)
-    Object.connect(node, "resetted", button, button.Hide)
+    Object.connect(node, "picked", frame, frame.Show)
+    Object.connect(node, "resetted", frame, frame.Hide)
     Object.connect(node, "carrierClassChanged", nil, onClassChanged)
-    Object.connect(node, "carrierHealthChanged", nil,  function(p)
-        if p then
-            button:SetTextColor((1 - p)*2,p*2,0)
+    Object.connect(node, "carrierHealthChanged", nil,  function (p)
+        if StrategosWSGSettings.carriersBars then
+            if p then
+                bar:SetValue(p*100)
+                bar:SetStatusBarColor((1 - p)*2,p*2,0,1)
+                bar:Show()
+            else
+                bar:Hide()
+            end
+            if frame.faction == 1 then
+                button:SetTextColor(0,0,1)
+            else
+                button:SetTextColor(1,0,0)
+            end
         else
-            button:SetTextColor(1,1,1)
+            if p then
+                button:SetTextColor((1 - p)*2,p*2,0)
+            else
+                button:SetTextColor(1,1,1)
+            end
+            bar:Hide()
         end
     end)
     Object.connect(node, "carrierNameChanged", nil,  function(name)
@@ -75,13 +96,14 @@ function StrategosBattlegroundUIController:initWSGFrame(node, button, icon)
             end
         end
     end
-    getglobal(button:GetName().."Ring"):setTimer(node.timer)
+    bar:SetMinMaxValues(0,100)
+    ring:setTimer(node.timer)
 end
 
 function StrategosBattlegroundUIController:init(bg)
     if bg.zone == "Warsong Gulch" then
-        StrategosBattlegroundUIController:initWSGFrame(bg.flagA, StrategosHordeCarrier, StrategosHordeCarrierIcon)
-        StrategosBattlegroundUIController:initWSGFrame(bg.flagH, StrategosAllianceCarrier, StrategosAllianceCarrierIcon)
+        StrategosBattlegroundUIController:initWSGFrame(bg.flagA, StrategosHordeCarrier)
+        StrategosBattlegroundUIController:initWSGFrame(bg.flagH, StrategosAllianceCarrier)
         Object.connect(bg, "finished", StrategosAllianceCarrier, StrategosAllianceCarrier.Hide)
         Object.connect(bg, "finished", StrategosHordeCarrier, StrategosAllianceCarrier.Hide)
     elseif bg.zone == "Arathi Basin" then
