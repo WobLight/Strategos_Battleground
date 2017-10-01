@@ -65,7 +65,11 @@
             </OnLoad>
             <OnShow>
                 this:SetPoint("CENTER", AlwaysUpFrame1DynamicIconButton)
-                this:SetPoint("LEFT", AlwaysUpFrame1DynamicIconButton, "RIGHT")
+                if StrategosWSGSettings.carriersToLeft then
+                    this:SetPoint("RIGHT", AlwaysUpFrame1, "LEFT", -StrategosAllianceCarrierIcon:GetWidth() -8 -StrategosAllianceCarrierRing:GetWidth(), 0)
+                else
+                    this:SetPoint("LEFT", AlwaysUpFrame1DynamicIconButton, "RIGHT")
+                end
             </OnShow>
         </Scripts>
     </Button>
@@ -77,7 +81,11 @@
             </OnLoad>
             <OnShow>
                 this:SetPoint("CENTER", AlwaysUpFrame2DynamicIconButton)
-                this:SetPoint("LEFT", AlwaysUpFrame2DynamicIconButton, "RIGHT")
+                if StrategosWSGSettings.carriersToLeft then
+                    this:SetPoint("RIGHT", AlwaysUpFrame2, "LEFT", -StrategosAllianceCarrierIcon:GetWidth() -8 -StrategosAllianceCarrierRing:GetWidth(), 0)
+                else
+                    this:SetPoint("LEFT", AlwaysUpFrame2DynamicIconButton, "RIGHT")
+                end
             </OnShow>
         </Scripts>
     </Button>
