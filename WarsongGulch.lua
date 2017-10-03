@@ -489,88 +489,115 @@ function WarsongGulch:requestCarriersData()
     self.flagH.waitingCarrierData = true
 end
 
-function WarsongGulch:processMessage(pkt)
-    debug(pkt)
-    if pkt.message == "REQUEST_CARRIERS" then
-        local reply = ""
-        for k,flag in {a=self.flagA, h=self.flagH} do
-            if flag.carrier and flag.carrier.name and flag.carrier.name ~= "" then
-                reply = reply .. "\t" ..k..flag.carrier.name
+function WarsongGulch:REQUEST_CARRIERS()
+    local reply = ""
+    for k,flag in {a=self.flagA, h=self.flagH} do
+        if flag.carrier and flag.carrier.name and flag.carrier.name ~= "" then
+            reply = reply .. "\t" ..k..flag.carrier.name
+        end
+    end
+    local efc = self:enemyCarriedFlag().carrier
+    if efc and efc.updater then
+        reply = reply .. "\tu" .. efc.updater
+    end
+    if reply ~= "" then
+        self.broadcaster:sendMessage("DATA_CARRIERS"..reply,"BATTLEGROUND")
+    end
+end
+
+function WarsongGulch:DATA_CARRIERS(body)
+    local t = {}
+    for a in string.gfind(body,"([^\t]+)") do
+        t[strsub(a,1,1)] = strsub(a,2)
+    end
+    for k,flag in {a=self.flagA, h=self.flagH} do
+        if flag.waitingCarrierData then
+            local name = t[k]
+            
+            if name then
+                flag:pick(name)
             end
         end
         local efc = self:enemyCarriedFlag().carrier
-        if efc and efc.updater then
-            reply = reply .. "\tu" .. efc.updater
-        end
-        if reply ~= "" then
-            self.broadcaster:sendMessage("DATA_CARRIERS"..reply,"BATTLEGROUND")
-        end
-    elseif strfind(pkt.message,"^DATA_CARRIERS") then
-        for k,flag in {a=self.flagA, h=self.flagH} do
-            if flag.waitingCarrierData then
-                local _,_,name = strfind(pkt.message, format("\t%s(%%a+)",k))
-                if name then
-                    flag:pick(name)
-                end
-            end
-            local efc = self:enemyCarriedFlag().carrier
-            if efc then
-                local r = {strfind(pkt.message,"\tu(%a+)")}
-                if getn(r) == 3 then
-                    efc.updater = r[3]
-                end
+        if efc then
+            local r = t[u]
+            if r then
+                efc.updater = r
             end
         end
-    elseif strfind(pkt.message,"^EFC") then
-        local flag = self:enemyCarriedFlag()
-        if not flag.carrier then
-            return
+    end
+end
+
+function WarsongGulch:EFC(_, pkt)
+    local flag = self:enemyCarriedFlag()
+    if not flag.carrier then
+        return
+    end
+    local _, _, p = strfind(pkt.message,"\th(%d+)")
+    if not p then
+        if flag.carrier.updater == pkt.sender then
+            flag.carrier.updater = nil
+            self:enemyCarriedFlag():setCarrierHealth(nil, true)
+            self:notifyHealth(nil, nil, true)
         end
-        local _, _, p = strfind(pkt.message,"\th(%d+)")
-        if not p then
-            if flag.carrier.updater == pkt.sender then
-                flag.carrier.updater = nil
-                self:enemyCarriedFlag():setCarrierHealth(nil, true)
-                self:notifyHealth(nil, nil, true)
-            end
-            return
-        end
-        local _, _, t = strfind(pkt.message,"\tt(%d+)")
-        t = tonumber(t)
-        if not self.broadcaster.healthLock and flag.carrier.updater == UnitName("player") then
-            return
-        end
---        flag.carrier.updaters[pkt.sender] = {p = p, t = t}
-        if ( not flag.carrier.lastHealthTime or flag.carrier.lastHealthTime < t ) and GetBattlefieldInstanceRunTime() - t < 1000 then
-            flag.carrier.updater = pkt.sender
-            flag:setCarrierHealth(tonumber(p)/100, true)
-            self.broadcaster.healthTimer:start(5)
-            flag.carrier.lastHealthTime = t
-        end
-    elseif strfind(pkt.message,"^LHC") then
-        local r = {strfind(pkt.message,"\t(%a)(%d+):(%d+)")}
-        if getn(r) ~= 5 then
-            return
-        end
-        local flag = r[3] == "a" and self.flagA or self.flagH
-        if not flag.carrier then
-            return
-        end
-        flag.carrier.lastWarn = {health = tonumber(r[4])/100, time = tonumber(r[5])}
-    elseif strfind(pkt.message,"^CE") then
-        local r = {strfind(pkt.message,"\t(%a+):(.):(%d+)")}
-        if getn(r) ~= 5 then
-            return
-        end
-        local name, accurate, time = r[3], r[4]~="0", tonumber(r[5])
-        local flag = self:enemyCarriedFlag()
-        if not flag.carrier then
-            return
-        end
-        if not flag.carrier.lastEngage or flag.carrier.lastEngage < time then
-            flag.carrier.lastEngage = time
-            self:engageEFC(name, accurate)
-        end
+        return
+    end
+    local _, _, t = strfind(pkt.message,"\tt(%d+)")
+    t = tonumber(t)
+    if not self.broadcaster.healthLock and flag.carrier.updater == UnitName("player") then
+        return
+    end
+    if ( not flag.carrier.lastHealthTime or flag.carrier.lastHealthTime < t ) and GetBattlefieldInstanceRunTime() - t < 1000 then
+        flag.carrier.updater = pkt.sender
+        flag:setCarrierHealth(tonumber(p)/100, true)
+        self.broadcaster.healthTimer:start(5)
+        flag.carrier.lastHealthTime = t
+    end
+end
+
+function WarsongGulch:LHC(message)
+    local r = {strfind(message,"(%a)(%d+):(%d+)")}
+    if getn(r) ~= 5 then
+        return
+    end
+    local flag = r[3] == "a" and self.flagA or self.flagH
+    if not flag.carrier then
+        return
+    end
+    flag.carrier.lastWarn = {health = tonumber(r[4])/100, time = tonumber(r[5])}
+end
+
+function WarsongGulch:CE(message)
+    local r = {strfind(message,"(%a+):(.):(%d+)")}
+    if getn(r) ~= 5 then
+        return
+    end
+    local name, accurate, time = r[3], r[4]~="0", tonumber(r[5])
+    local flag = self:enemyCarriedFlag()
+    if not flag.carrier then
+        return
+    end
+    if not flag.carrier.lastEngage or flag.carrier.lastEngage < time then
+        flag.carrier.lastEngage = time
+        self:engageEFC(name, accurate)
+    end
+end
+
+function WarsongGulch:processMessage(pkt)
+    local head, body
+    local hb = {strfind(pkt.message, "^([%a_]+)\t(.*)$")}
+    if getn(hb) == 4 then
+        head = hb[3]
+        body = hb[4]
+    else
+        head = pkt.message
+    end
+    debug({head = head, body = body})
+    local f = WarsongGulch[head]
+    if f then
+        f(self,body,pkt)
+    else
+        debug(format("Unknown packet %s: \"%s\"", head, body))
     end
 end
                 
