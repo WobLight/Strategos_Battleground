@@ -152,5 +152,4 @@ function ArathiBasin:processChatEvent(message, faction)
 end
 
 function ArathiBasin:leave()
-    self.statesHandler:UnregisterEvent("UPDATE_WORLD_STATES")
 end
