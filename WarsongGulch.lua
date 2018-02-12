@@ -209,7 +209,8 @@ function WarsongGulch:init()
                 local l = self.broadcaster:sendMessage(format("LHC\t%s%d:%d",n,pp*100,time),"BATTLEGROUND")
                 Object.connect(l, "looped", nil, function (t)
                     if not flag.carrier or strlen(flag.carrier.name or "") == 0 or t > 1000 or pp ~= lhe(p) then return end
-                    SendChatMessage(format("%s Flag Carrier is below %d%% Health!",n=="a" and "Horde" or "Alliance", pp*100),"BATTLEGROUND")
+                    local f = n=="a" and 0 or 1
+                    SendChatMessage(tr("WARSONG_LOWHEALTH_CHAT_WARN"..f,"chat",{health = pp*100}),"BATTLEGROUND")
                     flag.carrier.lastWarn = {health = pp, time = time}
                 end)
             end

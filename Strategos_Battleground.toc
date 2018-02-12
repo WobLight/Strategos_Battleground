@@ -2,7 +2,7 @@
 ## Title: Strategos [|c0000ff00Warsong Gulch|r]
 ## Dependencies: StrategosCore
 ## Notes: custom minimap for battlegrounds.
-## SavedVariables: StrategosWSGSettings, StrategosABSettings, StrategosAVGSettings
+## SavedVariables: StrategosWSGSettings, StrategosABSettings, StrategosAVGSettings, StrategosBGSettings
 ## Version: 0.1
 ## Author: WobLight
 Battleground.lua
@@ -10,3 +10,5 @@ WarsongGulch.lua
 ArathiBasin.lua
 AlteracValley.lua
 Board.xml
+Localization.lua
+Localization_IT.lua

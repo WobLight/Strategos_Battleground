@@ -16,6 +16,9 @@ Object.attach(StrategosBattleground, {"newBattleground"})
 setmetatable(SB, {__index = getfenv() })
 setfenv(1, SB)
 
+local DEFAULT_SETTINGS = {
+}
+
 StrategosMinimapPlugin = {
     name = "Battleground"
 }
@@ -35,6 +38,22 @@ local Strategos_EventList = {
 
 EventHandler:RegisterEvent("ADDON_LOADED")
 
+function GetDefaultLocale(t)
+    if StrategosBattlegound_Localizations[GetLocale()] then
+        return GetLocale()
+    else
+        return "enUS"
+    end
+end
+
+function tr(s, c, ...)
+    return strarg(StrategosBattlegound_Localizations[StrategosBGSettings[c.."_lang"] or GetDefaultLocale(c)][s],unpack(arg))
+end
+
+function trl(s, ...)
+    return function (c) return tr(s, c, unpack(arg)) end
+end
+
 function EventHandler.ADDON_LOADED()
     if arg1 == "Strategos_Battleground" then
         if not StrategosWSGSettings then
@@ -46,6 +65,10 @@ function EventHandler.ADDON_LOADED()
         if not StrategosABSettings then
             getfenv(0).StrategosABSettings = {}
         end
+        if not StrategosBGSettings then
+            getfenv(0).StrategosBGSettings = {}
+        end
+        setmetatable(StrategosBGSettings, {__index = DEFAULT_SETTINGS})
     end
 end
 
@@ -291,17 +314,17 @@ function StrategosMinimapPlugin:load()
     StrategosBattlegroundMinimapStarting.buildTooltip = function(self)
         local left = self.timer:remaning()
         local m,s = floor(left/60), mod(left, 60)
-        return format("Starting in: %d:%02d", m, s)
+        return format(tr("BG_START_IN_UI","client")..": %d:%02d", m, s)
     end
     StrategosBattlegroundMinimapStarting.buildMenu = function(self)
         if self.timer:remaning() then
             UIDropDownMenu_AddButton({
-                text = "[BG] Starting in...",
+                text = tr("BG_START_IN_UI","client").."...",
                 func = function()
                     local left = self.timer:remaning()
                     if left then
                         local m,s = floor(left/60), mod(left, 60)
-                        SendChatMessage(format("Starting in: %d:%02d", m, s), "BATTLEGROUND")
+                        SendChatMessage(tr("BG_START_IN_CHAT","chat",{time = format("%d:%02d", m, s)}), "BATTLEGROUND")
                     end
                 end
             })

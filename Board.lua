@@ -81,7 +81,7 @@ function StrategosBattlegroundUIController:initWSGFrame(node, frame)
                 button:SetText("?????")
             end
         else
-            button:SetText("|c77665544_GROUND_|r")
+            button:SetText(strarg("|c77665544_%1_|r",tr("WARSONG_FLAG_GROUND","client")))
         end
     end)
     function button:onClick()
@@ -111,33 +111,37 @@ function StrategosBattlegroundUIController:init(bg)
         StrategosArathiScoreBar:Show()
         StrategosArathiScoreBar:SetScript("OnUpdate", function()
             local winner = GetBattlefieldWinner()
-            local v, c, b, t = 0, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {}
-            local text = "%s wins in: %d:%02d"
+            local v, c, b, t = 0, {0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, nil
+            local text
             if winner == 1 then
-                text = VICTORY_TEXT1
+                text = "ARATHI_BOARD_WIN_FACTION1"
                 c = {0,0,1}
                 v = 1
             elseif winner == 0 then
-                text = VICTORY_TEXT0
+                text = "ARATHI_BOARD_WIN_FACTION0"
                 c = {1,0,0}
                 v = 1
             else
                 local t1, t2 = bg:timeToWin(1), bg:timeToWin(2)
                 if not (t1 or t2) then
-                    text = "Stalling"
+                    text = "ARATHI_BOARD_STALL"
                 elseif not t1 then
-                    t = {"Horde", floor(t2/60), mod(t2,60)}
+                    text = "ARATHI_BOARD_WINNING_FACTION0"
+                    t = t2
                     b = {1,0,0}
                 elseif not t2 then
-                    t = {"Alliance", floor(t1/60), mod(t1,60)}
+                    text = "ARATHI_BOARD_WINNING_FACTION1"
+                    t = t1
                     b = {0,0,1}
                 elseif t1 > t2 then
-                    t = {"Horde", floor(t2/60), mod(t2,60)}
+                    text = "ARATHI_BOARD_WINNING_FACTION0"
+                    t = t2
                     v = 1-t2/t1
                     c = {1,0,0}
                     b = {0,0,1}
                 else
-                    t = {"Alliance", floor(t1/60), mod(t1,60)}
+                    text = "ARATHI_BOARD_WINNING_FACTION1"
+                    t = t1
                     v = 1-t1/t2
                     c = {0,0,1}
                     b = {1,0,0}
@@ -146,7 +150,9 @@ function StrategosBattlegroundUIController:init(bg)
             this:SetValue(v*10000)
             this:SetStatusBarColor(unpack(c))
             this:SetBackdropColor(unpack(b))
-            StrategosArathiScoreBarText:SetText(format(text, unpack(t)))
+            local text = trl(text, t and { time = format("%d:%02d",floor(t/60),floor(t/60))})
+            StrategosArathiScoreBarText:SetText(text("client"))
+            StrategosArathiScoreBarText.announce = text("chat")
             this:SetWidth((AlwaysUpFrame1Text:GetWidth() + AlwaysUpFrame2Text:GetWidth())/2)
         end)
         Object.connect(bg, "finished", StrategosArathiScoreBar, StrategosArathiScoreBar.Hide)

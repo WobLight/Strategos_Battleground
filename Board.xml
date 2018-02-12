@@ -108,7 +108,7 @@
         </Backdrop>
         <Scripts>
             <OnMouseUp>
-                SendChatMessage(StrategosArathiScoreBarText:GetText(),"BATTLEGROUND")
+                SendChatMessage(StrategosArathiScoreBarText.announce,"BATTLEGROUND")
             </OnMouseUp>
             <OnShow>
                 this:SetPoint("LEFT", AlwaysUpFrame1Text, "LEFT")
