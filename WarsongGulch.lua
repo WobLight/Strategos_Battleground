@@ -210,7 +210,7 @@ function WarsongGulch:init()
                 Object.connect(l, "looped", nil, function (t)
                     if not flag.carrier or strlen(flag.carrier.name or "") == 0 or t > 1000 or pp ~= lhe(p) then return end
                     local f = n=="a" and 0 or 1
-                    SendChatMessage(tr("WARSONG_LOWHEALTH_CHAT_WARN"..f,"chat",{health = pp*100}),"BATTLEGROUND")
+                    SendChatMessage(tr("WARSONG_LOWHEALTH_CHAT_WARN"..f,"chat", {pname = flag.carrier.name, health = pp*100}),"BATTLEGROUND")
                     flag.carrier.lastWarn = {health = pp, time = time}
                 end)
             end
