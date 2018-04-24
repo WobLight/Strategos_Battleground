@@ -19,6 +19,10 @@ setfenv(1, SB)
 local DEFAULT_SETTINGS = {
 }
 
+local DEFAULT_WSG_SETTINGS = {
+    warnings = true
+}
+
 StrategosMinimapPlugin = {
     name = "Battleground"
 }
@@ -69,6 +73,7 @@ function EventHandler.ADDON_LOADED()
             getfenv(0).StrategosBGSettings = {}
         end
         setmetatable(StrategosBGSettings, {__index = DEFAULT_SETTINGS})
+        setmetatable(StrategosWSGSettings, {__index = DEFAULT_WSG_SETTINGS})
     end
 end
 

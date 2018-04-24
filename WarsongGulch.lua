@@ -197,7 +197,7 @@ function WarsongGulch:init()
         end
         local n = c
         Object.connect(flag,"carrierHealthChanged",nil,function (p,r)
-            if not p or r then
+            if not p or r or not StrategosWSGSettings.warnings then
                 return
             end
             if flag.carrier.lastWarn and GetBattlefieldInstanceRunTime() - flag.carrier.lastWarn.time > 20000 then
