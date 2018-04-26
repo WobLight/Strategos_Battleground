@@ -187,7 +187,7 @@ end
 
 Battleground = {}
 function Battleground:new()
-    local o = { startTimer = Timer:new(), nodes = {} }
+    local o = { startTimer = Timer:new(120), nodes = {} }
     Object.attach(o,{"starting","started","finished"})
     setmetatable(o, self)
     self.__index = self
@@ -197,7 +197,7 @@ function Battleground:new()
     end
     local time = GetBattlefieldInstanceRunTime()/1000
     if time ~= 0 and time < 120 then
-        o.startTimer:set(120 - time, 120)
+        o.startTimer:set(120 - time)
         o:starting()
     end
     return o
