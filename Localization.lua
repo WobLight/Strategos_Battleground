@@ -18,8 +18,8 @@ StrategosBattlegound_Localizations.enUS = {
     ARATHI_BOARD_WINNING_FACTION1 = "Alliance wins in: %time",
     ARATHI_BOARD_WIN_FACTION0 = "Horde wins!",
     ARATHI_BOARD_WIN_FACTION1 = "Alliance wins!",
-    WARSONG_LOWHEALTH_CHAT_WARN0 = "\124cffff0000\124Hplayer:%pname\124hHorde Flag Carrier\124h\124r is below %health% Health!",
-    WARSONG_LOWHEALTH_CHAT_WARN1 = "\124cff00b0ff\124Hplayer:%pname\124hAlliance Flag Carrier\124h\124r is below %health% Health!",
+    WARSONG_LOWHEALTH_CHAT_WARN0 = "\124cffff0000\124Hplayer:%pname\124h[Horde Flag Carrier]\124h\124r is below %health% Health!",
+    WARSONG_LOWHEALTH_CHAT_WARN1 = "\124cff00b0ff\124Hplayer:%pname\124h[Alliance Flag Carrier]\124h\124r is below %health% Health!",
     BG_START_IN_CHAT = "Starting in: %time",
     BG_START_IN_UI = "[BG] Starting in"
 }
