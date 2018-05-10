@@ -84,6 +84,7 @@ function ArathiBasin:updateWorldStates()
             return
         end
         local _,_, n, s = strfind(msg, "(%d).-(%d+)/")
+        if not n then return end
         n = tonumber(n)
         s = tonumber(s)
         if self.team[i].lastN ~= n or self.team[i].lastScore ~= s then
