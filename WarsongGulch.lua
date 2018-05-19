@@ -209,7 +209,7 @@ function WarsongGulch:init()
                 local f = n=="a" and 0 or 1
                 local m = tr("WARSONG_LOWHEALTH_CHAT_WARN"..f,"chat", {pname = flag.carrier.name, health = pp*100})
                 local l = self.broadcaster:sendMessage(format("LHC\t%s%d:%d",n,pp*100,time),"BATTLEGROUND")
-                if not flag.carrier.updater then
+                if not (flag.carrier.updater or flag:isAllied()) then
                     SendChatMessage(m,"BATTLEGROUND")
                 else
                     Object.connect(l, "looped", nil, function (t)
