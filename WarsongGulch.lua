@@ -209,13 +209,17 @@ function WarsongGulch:init()
                 local f = n=="a" and 0 or 1
                 local m = tr("WARSONG_LOWHEALTH_CHAT_WARN"..f,"chat", {pname = flag.carrier.name, health = pp*100})
                 local l = self.broadcaster:sendMessage(format("LHC\t%s%d:%d",n,pp*100,time),"BATTLEGROUND")
-                if not (flag.carrier.updater or flag:isAllied()) then
+                local function ann()
+                    if not flag.carrier or strlen(flag.carrier.name or "") == 0 or pp ~= lhe(p) then return end
                     SendChatMessage(m,"BATTLEGROUND")
+                    flag.carrier.lastWarn = {health = pp, time = time}
+                end
+                if not (flag.carrier.updater or flag:isAllied()) then
+                    ann()
                 else
                     Object.connect(l, "looped", nil, function (t)
-                        if not flag.carrier or strlen(flag.carrier.name or "") == 0 or t > 1000 or pp ~= lhe(p) then return end
-                        SendChatMessage(m,"BATTLEGROUND")
-                        flag.carrier.lastWarn = {health = pp, time = time}
+                        if t > 1000 then return end
+                        ann()
                     end)
                 end
             end
@@ -310,6 +314,7 @@ function WSGNode:drop()
         self.timer:start(10)
         self:dropped()
         self.carrier = nil
+        self.updater = nil
         self:carrierNameChanged()
         self:carrierHealthChanged()
     end
@@ -320,6 +325,7 @@ function WSGNode:capture()
     self.timer:stop()
     self:captured()
     self.carrier = nil
+    self.updater = nil
     self:carrierNameChanged()
     self:carrierHealthChanged()
 end
